@@ -196,6 +196,7 @@ function Player() {
   this.state = "idle-right";
   this.position = {x: 0, y: CANVAS_HEIGHT-32};
   this.velocity = {x: 0, y: 3};
+  this.acceleration = {x: 0, y: 0};
   // TODO
   this.img = new Image()
   this.img.src = 'assets/img/Individual_Img/idle_right.png';
@@ -211,11 +212,12 @@ function Player() {
 Player.prototype.update = function(elapsedTime, input) {
 
   if (this.position.y >= CANVAS_HEIGHT-32) { this.state = "idle-right";}
-  if (this.velocity.y < 3) this.velocity.y += .1;
+  this.velocity.y += .2;
   switch (this.state) {
     case "idle-right":
       // set the velocity
       this.velocity.x = 0;
+      this.acceleration.y = 0;
       if(input.left) { this.velocity.x -= 2; }
       if(input.right) this.velocity.x += 2;
       break;
@@ -230,6 +232,8 @@ Player.prototype.update = function(elapsedTime, input) {
   //if(input.down) this.velocity.y += 5 / 2;
 
   // move the player
+  this.velocity.x -= this.acceleration.x;
+  this.velocity.y += this.acceleration.y;
   this.position.x += this.velocity.x;
   this.position.y += this.velocity.y;
 
@@ -248,14 +252,13 @@ Player.prototype.update = function(elapsedTime, input) {
  */
 Player.prototype.render = function(elapasedTime, ctx) {
   ctx.drawImage(this.img, this.position.x, this.position.y, 32, 32);
-
-
 }
 
 Player.prototype.jump = function() {
   if (this.position.y >= CANVAS_HEIGHT-32) {
     this.state = "jump";
-    this.velocity.y -= 7;
+    this.velocity.y -= 10;
+    this.acceleration.y = 1;
     console.log(this.velocity.y);
   }
 }

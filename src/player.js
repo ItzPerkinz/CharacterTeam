@@ -72,8 +72,6 @@ Player.prototype.update = function(elapsedTime, input) {
  */
 Player.prototype.render = function(elapasedTime, ctx) {
   ctx.drawImage(this.img, this.position.x, this.position.y, 32, 32);
-
-
 }
 
 Player.prototype.jump = function() {
