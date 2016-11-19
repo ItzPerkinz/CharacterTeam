@@ -75,7 +75,7 @@ window.onkeyup = function(event) {
 
 window.onkeypress = function(event) {
   event.preventDefault();
-  if (event.keyCode == 32) {
+  if (event.keyCode == 32 || event.keyCode == 31) {
     player.jump();
   }
 }
