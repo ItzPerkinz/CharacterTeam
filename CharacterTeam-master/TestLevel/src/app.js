@@ -4,12 +4,16 @@
 const Game = require('./game');
 const Player = require('./player');
 const Tiles = require('./tiles');
+const Enemy = require('./enemy');
+const Camera = require('./camera');
 
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
-var player = new Player(0,16*35) ;
+var player = new Player(0,16*35);
+var camera = new Camera(canvas);
+
 var input = {
   up: false,
   down: false,
@@ -17,7 +21,9 @@ var input = {
   right: false
 }
 var groundHit = false;
+var enemies = [];
 
+spawnEnemy({x: 600, y: 400});
 
 var spritesheet = new Image();
 spritesheet.src = 'assets/basicTiles.jpg';
@@ -88,7 +94,7 @@ window.onkeyup = function(event) {
 
 window.onkeypress = function(event) {
   event.preventDefault();
-  if(event.keyCode == 32 || event.keyCode == 31) {
+  if(event.keyCode == 32 || event.keyCode == 31 || event.key == " ") {
     player.jump();
   }
 }
@@ -124,6 +130,16 @@ function update(elapsedTime) {
       player.floor = canvas.height - 32;
     }
   }
+  var eT = elapsedTime;
+  var c = camera;
+  enemies.forEach(function(e, i) {
+    e.update(eT, player.position);
+    if (e.velocity.y >= 0) { enemyOnFloor(e); }
+    checkForClosePlayer(e);
+    if (e.position.x < -80) { enemies.splice(i, 1); spawnEnemy({x: 800, y: 400}); }
+  });
+
+
 }
 
 
@@ -148,7 +164,34 @@ function render(elapsedTime, ctx) {
 	  );
   }
 
+  var eT = elapsedTime;
+  enemies.forEach(function(e) {
+    e.render(eT, ctx);
+  });
+
   //player
   player.render(elapsedTime, ctx);
 }
 
+// create a new enemy
+function spawnEnemy(p) {
+  var e = new Enemy(p, "orc_basic");
+  enemies.unshift(e);
+}
+
+// checks if an enemy is on the floor or not
+function enemyOnFloor(e) {
+  if(tiles.isFloor({x: e.position.x, y: e.position.y + 46})) {
+    //player.velocity = {x:0,y:0};
+    e.velocity.y = 0;
+    e.floor = (Math.floor((e.position.y+32)/16) * 16) - 32;
+  }
+  else {
+    e.floor = canvas.height - 32;
+  }
+}
+
+function checkForClosePlayer(e)
+{
+  if (e.position.x < player.position.x + 40 && e.position.x > player.position.x && e.state != "stabbing") e.stab();
+}

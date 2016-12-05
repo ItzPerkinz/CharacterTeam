@@ -5,12 +5,16 @@
 const Game = require('./game');
 const Player = require('./player');
 const Tiles = require('./tiles');
+const Enemy = require('./enemy');
+const Camera = require('./camera');
 
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
-var player = new Player(0,16*35) ;
+var player = new Player(0,16*35);
+var camera = new Camera(canvas);
+
 var input = {
   up: false,
   down: false,
@@ -18,7 +22,9 @@ var input = {
   right: false
 }
 var groundHit = false;
+var enemies = [];
 
+spawnEnemy({x: 600, y: 400});
 
 var spritesheet = new Image();
 spritesheet.src = 'assets/basicTiles.jpg';
@@ -89,7 +95,7 @@ window.onkeyup = function(event) {
 
 window.onkeypress = function(event) {
   event.preventDefault();
-  if(event.keyCode == 32 || event.keyCode == 31) {
+  if(event.keyCode == 32 || event.keyCode == 31 || event.key == " ") {
     player.jump();
   }
 }
@@ -125,6 +131,16 @@ function update(elapsedTime) {
       player.floor = canvas.height - 32;
     }
   }
+  var eT = elapsedTime;
+  var c = camera;
+  enemies.forEach(function(e, i) {
+    e.update(eT, player.position);
+    if (e.velocity.y >= 0) { enemyOnFloor(e); }
+    checkForClosePlayer(e);
+    if (e.position.x < -80) { enemies.splice(i, 1); spawnEnemy({x: 800, y: 400}); }
+  });
+
+
 }
 
 
@@ -149,12 +165,242 @@ function render(elapsedTime, ctx) {
 	  );
   }
 
+  var eT = elapsedTime;
+  enemies.forEach(function(e) {
+    e.render(eT, ctx);
+  });
+
   //player
   player.render(elapsedTime, ctx);
 }
 
+// create a new enemy
+function spawnEnemy(p) {
+  var e = new Enemy(p, "orc_basic");
+  enemies.unshift(e);
+}
 
-},{"./game":2,"./player":3,"./tiles":4}],2:[function(require,module,exports){
+// checks if an enemy is on the floor or not
+function enemyOnFloor(e) {
+  if(tiles.isFloor({x: e.position.x, y: e.position.y + 46})) {
+    //player.velocity = {x:0,y:0};
+    e.velocity.y = 0;
+    e.floor = (Math.floor((e.position.y+32)/16) * 16) - 32;
+  }
+  else {
+    e.floor = canvas.height - 32;
+  }
+}
+
+function checkForClosePlayer(e)
+{
+  if (e.position.x < player.position.x + 40 && e.position.x > player.position.x && e.state != "stabbing") e.stab();
+}
+
+},{"./camera":2,"./enemy":3,"./game":4,"./player":5,"./tiles":6}],2:[function(require,module,exports){
+"use strict";
+
+/* Classes and Libraries */
+const Vector = require('./vector');
+
+/**
+ * @module Camera
+ * A class representing a simple camera
+ */
+module.exports = exports = Camera;
+
+/**
+ * @constructor Camera
+ * Creates a camera
+ * @param {Rect} screen the bounds of the screen
+ */
+function Camera(screen) {
+  this.x = 0;
+  this.y = 0;
+  this.width = screen.width;
+  this.height = screen.height;
+}
+
+/**
+ * @function update
+ * Updates the camera based on the supplied target
+ * @param {Vector} target what the camera is looking at
+ */
+Camera.prototype.update = function(target) {
+   this.y = target.y - 200;
+
+}
+
+/**
+ * @function onscreen
+ * Determines if an object is within the camera's gaze
+ * @param {Vector} target a point in the world
+ * @return true if target is on-screen, false if not
+ */
+Camera.prototype.onScreen = function(target) {
+  return (
+     target.x > this.x &&
+     target.x < this.x + this.width &&
+     target.y > this.y &&
+     target.y < this.y + this.height
+   );
+}
+
+/**
+ * @function toScreenCoordinates
+ * Translates world coordinates into screen coordinates
+ * @param {Vector} worldCoordinates
+ * @return the tranformed coordinates
+ */
+Camera.prototype.toScreenCoordinates = function(worldCoordinates) {
+  return Vector.subtract(worldCoordinates, this);
+}
+
+/**
+ * @function toWorldCoordinates
+ * Translates screen coordinates into world coordinates
+ * @param {Vector} screenCoordinates
+ * @return the tranformed coordinates
+ */
+Camera.prototype.toWorldCoordinates = function(screenCoordinates) {
+  return Vector.add(screenCoordinates, this);
+}
+
+},{"./vector":7}],3:[function(require,module,exports){
+"use strict";
+
+/* Classes and Libraries */
+
+/* Constants */
+const CANVAS_WIDTH = 1120;
+const CANVAS_HEIGHT = 800;
+const IMAGE_SIZE = 64;
+const MS_PER_FRAME = 1000/8;
+
+/**
+ * @module Enemy
+ * A class representing an enemy
+ */
+module.exports = exports = Enemy;
+
+/**
+ * @constructor Enemy
+ * Base class for an enemy
+ * @param {object} startingPosition, object containing x and y coords
+ */
+function Enemy(startingPosition, type) {
+  this.state = "walking";
+  this.position = startingPosition;
+  this.gravity = {x: 0, y: .5};
+  this.velocity = {x: 0, y: 0};
+  this.floor = 16*35;
+  // TODO
+  this.frame = 0; //Frame on X-axis
+  this.frameHeight = 0; //Frame on Y-axis
+  this.direction = "left";
+  this.time = MS_PER_FRAME;
+  this.type = type;
+  this.img = new Image();
+  this.img.src = "assets/img/Sprite_Sheets/orc_basic.png";
+  switch (this.type) {
+    case "orc_basic":
+      this.img.src = "assets/img/Sprite_Sheets/orc_basic.png";
+      if (this.direction == "left") {
+        this.frameHeight = 9;
+        this.frame = 0; }
+      else {
+        this.frameHeight = 11;
+        this.frame = 0; }
+      break;
+  }
+}
+
+/**
+ * @function update
+ * Updates the enemy based on the supplied input
+ * @param {DOMHighResTimeStamp} elapedTime
+ * @param {object} playerPosition, object containing x and y coords
+ */
+Enemy.prototype.update = function(elapsedTime, playerPosition) {
+  switch (this.type) {
+    case "orc_basic":
+      switch (this.state) {
+        case "walking":
+          this.time += elapsedTime;
+          if (this.direction == "left") {
+            if (this.time >= MS_PER_FRAME) { this.frame++; this.time = 0; }
+            if (this.frame > 8) this.frame = 0;
+            this.velocity.x -= .1;
+            if (this.velocity.x <= -1.5) this.velocity.x = -1.5;
+          }
+          else {
+            if (this.time >= MS_PER_FRAME) { this.frame++; this.time = 0; }
+            if (this.frame > 8) this.frame = 0;
+            this.velocity.x += .1;
+            if (this.velocity.x >= 1.5) this.velocity.x = 1.5;
+          }
+          break;
+        case "stabbing":
+          this.time += elapsedTime;
+          if (this.direction == "left") {
+            if (this.time >= MS_PER_FRAME) { this.frame++; this.time = 0; }
+            if (this.frame > 7) { this.state = "walking"; this.frame = 0; this.frameHeight = 9; }
+            this.velocity.x = 0;
+            if (this.position >= playerPosition.y + 100) {
+              this.state = "walking";
+              this.frame = 0; this.frameHeight = 9; }
+          }
+          else {
+            if (this.time >= MS_PER_FRAME) { this.frame++; this.time = 0; }
+            if (this.frame > 7) { this.state = "walking"; this.frame = 0; this.frameHeight = 11; }
+            this.velocity.x = 0;
+            if (this.position >= playerPosition.y + 100) {
+              this.state = "walking";
+              this.frame = 0; this.frameHeight = 11; }
+          }
+
+          break;
+      }
+      break;
+  }
+
+  // move the player
+  this.position.x += this.velocity.x;
+  this.position.y += this.velocity.y;
+  if(this.velocity.y < 14 && this.position.x > 0 && this.position.x < CANVAS_WIDTH)
+  {
+   this.velocity.x += this.gravity.x;
+   this.velocity.y += this.gravity.y;
+  }
+
+}
+
+/**
+ * @function render
+ * Renders the enemy in world coordinates
+ * @param {DOMHighResTimeStamp} elapsedTime
+ * @param {CanvasRenderingContext2D} ctx
+ */
+Enemy.prototype.render = function(elapasedTime, ctx) {
+  // TODO
+  switch (this.type) {
+    case "orc_basic":
+      ctx.drawImage(this.img, IMAGE_SIZE*this.frame, IMAGE_SIZE*this.frameHeight, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 80, 80);
+      break;
+  }
+  //ctx.drawImage(this.img, IMAGE_SIZE*this.frame, IMAGE_SIZE*this.frameHeight, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 32, 32);
+}
+
+// stabs
+Enemy.prototype.stab = function() {
+  this.state = "stabbing";
+  this.frame = 0;
+  if (this.direction == "left") this.frameHeight = 5;
+  else this.frameHeight = 7;
+  this.time = 0;
+}
+
+},{}],4:[function(require,module,exports){
 "use strict";
 
 /**
@@ -212,7 +458,7 @@ Game.prototype.loop = function(newTime) {
   this.frontCtx.drawImage(this.backBuffer, 0, 0);
 }
 
-},{}],3:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 /* Classes and Libraries */
@@ -452,7 +698,7 @@ Player.prototype.jump = function() {
   }
 }
 
-},{}],4:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 
 
 
@@ -507,4 +753,6 @@ Tiles.prototype.isFloor = function(position){
 		return false
 	}
 }
+},{}],7:[function(require,module,exports){
+
 },{}]},{},[1]);
