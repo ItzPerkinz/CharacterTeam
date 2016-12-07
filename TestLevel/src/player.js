@@ -227,6 +227,8 @@ Player.prototype.update = function(elapsedTime, input) {
  */
 Player.prototype.render = function(elapasedTime, ctx) {
   ctx.drawImage(this.img, IMAGE_SIZE*this.frame, IMAGE_SIZE*this.frameHeight, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 32, 32);
+  //ctx.rect(this.position.x, this.position.y, 32, 32);
+  //ctx.stroke();
 }
 
 Player.prototype.jump = function() {

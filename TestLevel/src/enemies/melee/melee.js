@@ -125,8 +125,9 @@ Melee.prototype.update = function(elapsedTime, playerPosition, entityManager) {
  * @param {CanvasRenderingContext2D} ctx
  */
 Melee.prototype.render = function(elapasedTime, ctx) {
-
   ctx.drawImage(this.img, IMAGE_SIZE*this.frame.x, IMAGE_SIZE*this.frame.y, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 80, 80);
+  //ctx.rect(this.position.x + 2.5, this.position.y + 20, 75, 60);
+  //ctx.stroke();
 
 }
 
@@ -139,9 +140,10 @@ Melee.prototype.stab = function() {
 }
 
 function onFloor(melee) {
-  if (melee.tiles.isFloor({x:melee.position.x, y:melee.position.y + 46})) {
+  if (melee.tiles.isFloor({x:melee.position.x, y:melee.position.y + 48})) {
     melee.velocity.y = 0;
     melee.floor = (Math.floor((melee.position.y+32)/16) * 16) - 32;
+    melee.position.y = melee.floor + 4;
   }
   else {
     melee.floor = CANVAS_HEIGHT - 32;

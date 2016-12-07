@@ -112,11 +112,14 @@ function meleeInteractions(me, player) {
 
 function collisions(me, player) {
   me.enemies.forEach(function(enemy, i) {
-    if (player.position.x + 28 > enemy.position.x &&
-        player.position.y < enemy.position.y + 64 &&
-        player.position.x < enemy.position.x + 76 &&
-        player.position.y + 28 > enemy.position.y) {
-          me.enemies.splice(i, 1);
+    if (player.position.x + 32 > enemy.position.x + 5 &&
+        player.position.y < enemy.position.y + 80 &&
+        player.position.x < enemy.position.x + 75 &&
+        player.position.y + 32 > enemy.position.y + 20) {
+          console.log(player.position.x + " " + player.position.y + " // " + enemy.position.x + " " + enemy.position.y);
+          if (player.position.y + 32 <= enemy.position.y + 25) me.enemies.splice(i, 1);
+          else { me.player.state = "DEAD"; me.player.velocity = {x: 0, y: 0};
+                 me.player.gravity = {x: 0, y: 0}; me.player.position = {x: -100, y: 100}; }
         }
   })
 }

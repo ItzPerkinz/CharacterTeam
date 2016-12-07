@@ -27,7 +27,7 @@ var map = tiles.getMap();
 var blocks = tiles.getBlocks();
 
 var bird = new EnemyBird({x:1, y: 100}, {start:0 , end:canvas.width });
-var orc = new Orc({x: 200, y: 200}, tiles);
+var orc = new Orc({x: 600, y: 200}, tiles);
 
 var entityManager = new EntityManager(player);
 

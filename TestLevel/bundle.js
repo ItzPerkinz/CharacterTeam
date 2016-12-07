@@ -28,7 +28,7 @@ var map = tiles.getMap();
 var blocks = tiles.getBlocks();
 
 var bird = new EnemyBird({x:1, y: 100}, {start:0 , end:canvas.width });
-var orc = new Orc({x: 200, y: 200}, tiles);
+var orc = new Orc({x: 600, y: 200}, tiles);
 
 var entityManager = new EntityManager(player);
 
@@ -761,8 +761,9 @@ Melee.prototype.update = function(elapsedTime, playerPosition, entityManager) {
  * @param {CanvasRenderingContext2D} ctx
  */
 Melee.prototype.render = function(elapasedTime, ctx) {
-
   ctx.drawImage(this.img, IMAGE_SIZE*this.frame.x, IMAGE_SIZE*this.frame.y, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 80, 80);
+  //ctx.rect(this.position.x + 2.5, this.position.y + 20, 75, 60);
+  //ctx.stroke();
 
 }
 
@@ -775,9 +776,10 @@ Melee.prototype.stab = function() {
 }
 
 function onFloor(melee) {
-  if (melee.tiles.isFloor({x:melee.position.x, y:melee.position.y + 46})) {
+  if (melee.tiles.isFloor({x:melee.position.x, y:melee.position.y + 48})) {
     melee.velocity.y = 0;
     melee.floor = (Math.floor((melee.position.y+32)/16) * 16) - 32;
+    melee.position.y = melee.floor + 4;
   }
   else {
     melee.floor = CANVAS_HEIGHT - 32;
@@ -949,11 +951,14 @@ function meleeInteractions(me, player) {
 
 function collisions(me, player) {
   me.enemies.forEach(function(enemy, i) {
-    if (player.position.x + 28 > enemy.position.x &&
-        player.position.y < enemy.position.y + 64 &&
-        player.position.x < enemy.position.x + 76 &&
-        player.position.y + 28 > enemy.position.y) {
-          me.enemies.splice(i, 1);
+    if (player.position.x + 32 > enemy.position.x + 5 &&
+        player.position.y < enemy.position.y + 80 &&
+        player.position.x < enemy.position.x + 75 &&
+        player.position.y + 32 > enemy.position.y + 20) {
+          console.log(player.position.x + " " + player.position.y + " // " + enemy.position.x + " " + enemy.position.y);
+          if (player.position.y + 32 <= enemy.position.y + 25) me.enemies.splice(i, 1);
+          else { me.player.state = "DEAD"; me.player.velocity = {x: 0, y: 0};
+                 me.player.gravity = {x: 0, y: 0}; me.player.position = {x: -100, y: 100}; }
         }
   })
 }
@@ -1311,6 +1316,8 @@ Player.prototype.update = function(elapsedTime, input) {
  */
 Player.prototype.render = function(elapasedTime, ctx) {
   ctx.drawImage(this.img, IMAGE_SIZE*this.frame, IMAGE_SIZE*this.frameHeight, IMAGE_SIZE, IMAGE_SIZE, this.position.x, this.position.y, 32, 32);
+  //ctx.rect(this.position.x, this.position.y, 32, 32);
+  //ctx.stroke();
 }
 
 Player.prototype.jump = function() {
